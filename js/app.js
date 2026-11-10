@@ -328,7 +328,7 @@ const Views = {
         <div class="eyebrow">한국어 → 중국어</div>
         <textarea class="tr-in" id="trin" placeholder="한국어로 쓰거나 🎙를 눌러 말해 보세요. 중국어를 넣으면 발음만 보여 줘요.">${esc(App.trText || '')}</textarea>
         <div class="row wrap"><button class="btn" id="trgo">중국어로 바꾸기</button><button class="btn ghost" id="trmic">🎙 한국어로 말하기</button></div>
-        <p class="muted small" id="trmsg">번역은 Chrome에 들어 있는 번역 기능을 써요. 처음 한 번 번역 모델을 내려받고 나면 인터넷 없이도 돼요.</p>
+        <p class="muted small" id="trmsg">PC의 Edge·Chrome에서는 내장 번역(인터넷 없이도 가능)을, 휴대폰에서는 온라인 번역(Google 번역 서버로 문장 전송, 인터넷 필요)을 써요.</p>
       </div>
       <div id="trout"></div>
       ${st.trans.length ? `<div class="card"><div class="eyebrow">최근 번역</div>${st.trans.slice(0, 15).map((x, i) => `<div class="hist-item"><div><div class="zh">${esc(x.zh)}</div><div class="muted small">${esc(x.src)}</div></div><button class="btn sm ghost" data-h="${i}">다시 보기</button></div>`).join('')}</div>` : ''}`;
@@ -483,10 +483,46 @@ function renderResult(el) {
 const Trans = {
   inst: {}, pending: {}, progress: {},
   srcLang(text) { if (/[가-힣]/.test(text)) return 'ko'; if (HZ.test(text) && !/[a-zA-Z]{3,}/.test(text)) return 'zh'; return 'en'; },
+  usedOnline: false,
   async run(text, onMsg) {
     const src = this.srcLang(text);
+    this.usedOnline = false;
     if (src === 'zh') return text;
-    if (!('Translator' in self)) throw new Error('이 브라우저에는 내장 번역 기능이 없어요. Microsoft Edge 또는 최신 Chrome에서 열어 주세요.');
+    // 휴대폰 등 내장 번역이 없는 브라우저는 바로 온라인 번역 사용
+    if (!('Translator' in self)) return this.online(text, src, onMsg);
+    try { return await this.builtin(text, src, onMsg); }
+    catch (e) {
+      try { return await this.online(text, src, onMsg); }
+      catch (e2) { throw new Error(e.message + ' (온라인 번역도 실패: ' + e2.message + ')'); }
+    }
+  },
+  // 온라인 번역: 문장이 Google 번역(실패하면 MyMemory) 서버로 전송됨
+  async online(text, src, onMsg) {
+    this.usedOnline = true;
+    onMsg('온라인 번역 중…');
+    const get = async url => {
+      const ac = new AbortController(); const t = setTimeout(() => ac.abort(), 10000);
+      try { const r = await fetch(url, { signal: ac.signal }); if (!r.ok) throw new Error('HTTP ' + r.status); return await r.json(); }
+      finally { clearTimeout(t); }
+    };
+    const q = encodeURIComponent(text);
+    try {
+      const j = await get(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${src}&tl=zh-CN&dt=t&q=${q}`);
+      const out = (j[0] || []).map(x => x[0]).join('');
+      if (out) return out;
+      throw new Error('빈 결과');
+    } catch (e) {
+      try {
+        const j = await get(`https://api.mymemory.translated.net/get?q=${q}&langpair=${src}|zh-CN`);
+        const out = j && j.responseData && j.responseData.translatedText;
+        if (out && j.responseStatus == 200) return out;
+        throw new Error('번역 결과 없음');
+      } catch (e2) {
+        throw new Error(navigator.onLine === false ? '인터넷에 연결되어 있지 않아요.' : '온라인 번역 서버에 연결하지 못했어요. 잠시 뒤 다시 해 보세요.');
+      }
+    }
+  },
+  async builtin(text, src, onMsg) {
     if (!this.inst[src]) {
       // 같은 모델을 두 번 준비하지 않도록, 진행 중인 준비 작업을 이어서 기다림
       if (!this.pending[src]) {
@@ -520,7 +556,7 @@ async function doTranslate(el) {
   const msg = $('#trmsg', el); msg.textContent = '번역 중…';
   try {
     const zh = (await Trans.run(text, m => { msg.textContent = m; })).trim();
-    msg.textContent = Trans.srcLang(text) === 'zh' ? '중국어 문장이라 발음만 보여 줘요.' : '번역 완료 — 기계 번역이라 어색할 수 있어요.';
+    msg.textContent = Trans.srcLang(text) === 'zh' ? '중국어 문장이라 발음만 보여 줘요.' : (Trans.usedOnline ? '번역 완료(온라인 번역)' : '번역 완료') + ' — 기계 번역이라 어색할 수 있어요.';
     const st = Store.s;
     st.trans = [{ src: text, zh, date: today() }].concat(st.trans.filter(x => x.src !== text)).slice(0, 50); Store.save();
     App.trLast = { src: text, zh };
