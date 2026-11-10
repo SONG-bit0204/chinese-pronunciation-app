@@ -40,13 +40,31 @@ function pushIntroWrong(s) {
 
 // ───── 음성 합성 ─────
 const TTS = {
-  voice: null,
+  voice: null, good: false, audio: null,
+  // 휴대폰은 중국어 음성이 없으면 한국어 음성이 한자를 한국식으로 읽어 버림 (你好 → "호")
+  // → 휴대폰에서는 인터넷이 되면 온라인 원어민 음성을 쓰고, 안 되면 기기 음성 사용
+  mobile: /Android|iPhone|iPad|iPod/i.test(navigator.userAgent),
   init() {
     if (!('speechSynthesis' in window)) return;
-    const pick = () => { const zh = speechSynthesis.getVoices().filter(v => /zh[-_]CN/i.test(v.lang)); this.voice = zh.find(v => /Xiaoxiao|Natural|Online/i.test(v.name)) || zh[0] || null; };
+    const pick = () => {
+      const vs = speechSynthesis.getVoices();
+      const zh = vs.filter(v => /^(zh|cmn)([-_](Hans[-_])?CN)?$/i.test(v.lang) || /^(zh|cmn)[-_](Hans[-_])?CN/i.test(v.lang));
+      this.voice = zh.find(v => /Xiaoxiao|Natural|Online/i.test(v.name)) || zh[0] || null;
+      this.good = !!this.voice;
+    };
     pick(); speechSynthesis.onvoiceschanged = pick;
   },
+  useOnline() { return this.mobile ? navigator.onLine !== false : !this.good && navigator.onLine !== false; },
+  stop() {
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    if (this.audio) { this.audio.pause(); this.audio = null; }
+  },
   speak(text, rate) {
+    this.stop();
+    if (this.useOnline()) return this.online(text, rate).catch(() => this.local(text, rate));
+    return this.local(text, rate);
+  },
+  local(text, rate) {
     return new Promise(res => {
       if (!('speechSynthesis' in window)) return res();
       speechSynthesis.cancel();
@@ -54,6 +72,32 @@ const TTS = {
       let done = false; const fin = () => { if (!done) { done = true; res(); } };
       u.onend = fin; u.onerror = fin; setTimeout(fin, 20000);
       setTimeout(() => speechSynthesis.speak(u), 40);
+    });
+  },
+  // 온라인 원어민 음성: Google 번역 음성 → 안 되면 Youdao 사전 음성 (문장이 해당 서버로 전송됨)
+  async online(text, rate) {
+    const parts = (text.match(/[^。！？!?，,；;]+[。！？!?，,；;]?/g) || [text]).map(x => x.trim()).filter(Boolean);
+    for (const part of parts) {
+      const q = encodeURIComponent(part.slice(0, 180));
+      const urls = [`https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=zh-CN&client=gtx&q=${q}`, `https://dict.youdao.com/dictvoice?audio=${q}&le=zh`];
+      let ok = false;
+      for (const url of urls) { try { await this.play(url, rate); ok = true; break; } catch (e) { if (e === 'stopped') return; } }
+      if (!ok) throw new Error('online tts failed');
+    }
+  },
+  play(url, rate) {
+    return new Promise((res, rej) => {
+      const a = new Audio(); this.audio = a;
+      a.referrerPolicy = 'no-referrer'; a.preload = 'auto';
+      a.defaultPlaybackRate = a.playbackRate = Math.max(0.5, (rate || 1) * 0.9);
+      let started = false;
+      const t = setTimeout(() => { if (!started) { a.pause(); rej('timeout'); } }, 8000);
+      a.onplaying = () => { started = true; clearTimeout(t); };
+      a.onended = () => { clearTimeout(t); res(); };
+      a.onerror = () => { clearTimeout(t); rej('error'); };
+      a.onpause = () => { if (started && !a.ended && this.audio !== a) { clearTimeout(t); rej('stopped'); } };
+      a.src = url;
+      const p = a.play(); if (p && p.catch) p.catch(() => { clearTimeout(t); rej('error'); });
     });
   }
 };
