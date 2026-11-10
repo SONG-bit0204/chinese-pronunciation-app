@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">발음 체크</string>
+    <string name="asset_statements">[{ \"relation\": [\"delegate_permission/common.handle_all_urls\"], \"target\": { \"namespace\": \"web\", \"site\": \"https://song-bit0204.github.io\" } }]</string>
+    <color name="brand">#3168c9</color>
+    <color name="paper">#f6f2ea</color>
+</resources>
