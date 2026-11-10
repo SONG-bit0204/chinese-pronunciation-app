@@ -1,0 +1,59 @@
+/* 입문 학습 앱 스타일 위에 덧붙이는 발음 체크 전용 스타일 */
+:root { --t1: #d64545; --t2: #d98a1c; --t3: #2f8a4f; --t4: #3168c9; --t0: #8a8178; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --t1: #ff7b7b; --t2: #f2b44f; --t3: #6fcf8f; --t4: #7aa7ff; --t0: #a59a8e; } }
+:root[data-theme="dark"] { --t1: #ff7b7b; --t2: #f2b44f; --t3: #6fcf8f; --t4: #7aa7ff; --t0: #a59a8e; }
+#top a { text-decoration: none; }
+#tabs.three { grid-template-columns: repeat(3, 1fr); }
+
+.t1 { color: var(--t1); } .t2 { color: var(--t2); } .t3 { color: var(--t3); } .t4 { color: var(--t4); } .t0 { color: var(--t0); }
+.target-input { display: flex; gap: 8px; }
+.target-input .inp { font-family: var(--zh); font-size: 1.15rem; }
+select.inp { font-family: var(--ko); font-size: .92rem; }
+
+.sylls { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 14px 0 6px; }
+.syl { display: flex; flex-direction: column; align-items: center; min-width: 52px; padding: 8px 6px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); }
+.syl .hz { font-family: var(--zh); font-size: 2rem; line-height: 1.2; }
+.syl .p { font-size: .95rem; font-weight: 600; }
+.syl .tn { font-size: .72rem; color: var(--muted); }
+.syl.ok { border-color: var(--good); background: var(--good-soft); }
+.syl.ng { border-color: var(--bad); background: var(--accent-soft); }
+.syl.skip { opacity: .65; }
+.syl .got { font-size: .75rem; font-weight: 700; margin-top: 2px; }
+
+.rec-big { width: 92px; height: 92px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-size: 2rem; cursor: pointer; display: grid; place-items: center; margin: 6px auto; box-shadow: 0 4px 14px rgba(200, 64, 47, .3); }
+.rec-big.on { background: var(--bad); animation: pulse 1.2s infinite; }
+.rec-big:disabled { opacity: .5; cursor: wait; }
+.meter { height: 6px; border-radius: 99px; background: var(--line); overflow: hidden; max-width: 220px; margin: 6px auto; }
+.meter i { display: block; height: 100%; width: 0; background: var(--good); transition: width .08s; }
+.score-line { display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; margin: 6px 0; }
+.score-line div { text-align: center; }
+.score-line b { display: block; font-size: 1.6rem; }
+.score-line span { font-size: .8rem; color: var(--muted); }
+
+.tips { list-style: none; padding: 0; margin: 8px 0; }
+.tips li { padding: 8px 10px; border-left: 4px solid var(--bad); background: var(--accent-soft); border-radius: 8px; margin: 6px 0; font-size: .93rem; }
+.tips li.info { border-left-color: var(--warn); background: var(--warn-soft); }
+.tips li.good { border-left-color: var(--good); background: var(--good-soft); }
+
+.pchart { width: 100%; height: auto; display: block; }
+.pchart .band { fill: var(--line); opacity: .35; }
+.pchart .sep { stroke: var(--line); stroke-dasharray: 3 3; }
+.pchart .tmpl { fill: none; stroke: var(--muted); stroke-width: 2; stroke-dasharray: 5 4; }
+.pchart .mine { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.pchart .mine.ok { stroke: var(--good); } .pchart .mine.ng { stroke: var(--bad); }
+.pchart text { fill: var(--muted); font-size: 11px; }
+.pchart text.hz { fill: var(--ink); font-size: 16px; font-family: var(--zh); }
+
+.heard { font-family: var(--zh); font-size: 1.3rem; }
+.heard .diff { background: var(--accent-soft); color: var(--bad); border-radius: 4px; padding: 0 2px; }
+.ruby-line { font-family: var(--zh); font-size: 2rem; line-height: 2.6; text-align: center; word-break: break-all; }
+.ruby-line rt { font-family: var(--ko); font-size: .8rem; font-weight: 600; }
+.py-line { text-align: center; font-size: 1.05rem; margin: 2px 0 8px; }
+.tr-in { width: 100%; min-height: 84px; resize: vertical; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); font: inherit; font-size: 1.05rem; }
+.wchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.wchip { border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; background: var(--card); cursor: pointer; text-align: left; }
+.wchip .zh { font-size: 1.1rem; }
+.hist-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.hist-item .zh { font-size: 1.05rem; }
+.tone-bars .sbar { grid-template-columns: 42px 1fr auto; }
+.legend-tones { display: flex; gap: 12px; flex-wrap: wrap; font-size: .8rem; justify-content: center; }

@@ -1,0 +1,17 @@
+{
+  "name": "중국어 발음 체크",
+  "short_name": "발음 체크",
+  "description": "중국어 성조·발음 피드백과 한국어 → 중국어 번역",
+  "start_url": "./index.html",
+  "id": "./",
+  "orientation": "portrait",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f2ea",
+  "theme_color": "#3168c9",
+  "lang": "ko",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
