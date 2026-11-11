@@ -1,5 +1,5 @@
 // 오프라인 저장: 서버가 켜져 있으면 최신 파일을 쓰고, 꺼져 있으면 저장해 둔 파일로 열기
-const CACHE = 'zh-pron-app-v4';
+const CACHE = 'zh-pron-app-v5';
 const PRE = ['./', './index.html', './css/style.css', './js/pitch.js', './js/app.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './shared/css/base.css', './shared/js/data.js'];
 
 self.addEventListener('install', e => {

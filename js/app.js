@@ -61,8 +61,14 @@ const TTS = {
   },
   speak(text, rate) {
     this.stop();
-    if (this.useOnline()) return this.online(text, rate).catch(() => this.local(text, rate));
-    return this.local(text, rate);
+    if (this.useOnline()) return this.online(text, rate).catch(e => e === 'stopped' ? null : this.fallback(text, rate));
+    return this.fallback(text, rate);
+  },
+  // 온라인 음성이 안 될 때: 기기에 중국어 음성이 있을 때만 사용 (없으면 한국어 음성이 한자를 '호'처럼 읽어 버림)
+  fallback(text, rate) {
+    if (this.good || !this.mobile) return this.local(text, rate);
+    toast(navigator.onLine === false ? '인터넷이 연결되어 있어야 원어민 음성을 들을 수 있어요.' : '원어민 음성을 불러오지 못했어요. 잠시 후 다시 눌러 주세요.');
+    return Promise.resolve();
   },
   local(text, rate) {
     return new Promise(res => {
@@ -74,14 +80,14 @@ const TTS = {
       setTimeout(() => speechSynthesis.speak(u), 40);
     });
   },
-  // 온라인 원어민 음성: Google 번역 음성 → 안 되면 Youdao 사전 음성 (문장이 해당 서버로 전송됨)
+  // 온라인 원어민 음성: Google 번역 음성 → 안 되면 Baidu 번역 음성 → Youdao 사전 음성 (문장이 해당 서버로 전송됨)
   async online(text, rate) {
     const parts = (text.match(/[^。！？!?，,；;]+[。！？!?，,；;]?/g) || [text]).map(x => x.trim()).filter(Boolean);
     for (const part of parts) {
       const q = encodeURIComponent(part.slice(0, 180));
-      const urls = [`https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=zh-CN&client=gtx&q=${q}`, `https://dict.youdao.com/dictvoice?audio=${q}&le=zh`];
+      const urls = [`https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=zh-CN&client=gtx&q=${q}`, `https://fanyi.baidu.com/gettts?lan=zh&text=${q}&spd=5&source=web`, `https://dict.youdao.com/dictvoice?audio=${q}&le=zh`];
       let ok = false;
-      for (const url of urls) { try { await this.play(url, rate); ok = true; break; } catch (e) { if (e === 'stopped') return; } }
+      for (const url of urls) { try { await this.play(url, rate); ok = true; break; } catch (e) { if (e === 'stopped') throw e; } }
       if (!ok) throw new Error('online tts failed');
     }
   },
